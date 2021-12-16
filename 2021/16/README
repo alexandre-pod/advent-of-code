@@ -1,0 +1,15 @@
+swift run Main < input.txt
+
+echo "D2FE28" | swift run Main # literal: 2021
+
+echo "38006F45291200" | swift run Main # operator 0: literal 10, literal 20
+echo "EE00D40C823060" | swift run Main # operator 1: literal 1, literal 2, literal 3
+
+echo C200B40A82 | swift run Main # 3 : 1 + 2
+echo 04005AC33890 | swift run Main # 54 : 6 * 9
+echo 880086C3E88112 | swift run Main # 7 : min(7, 8, 9)
+echo CE00C43D881120 | swift run Main # 9 : max(7, 8, 9)
+echo D8005AC2A8F0 | swift run Main # produces 1 : 5 < 15
+echo F600BC2D8F | swift run Main # produces 0 : 5 > 15
+echo 9C005AC2F8F0 | swift run Main # produces 0 : 5 = 15
+echo 9C0141080250320F1802104A08 | swift run Main # produces 1 : 1 + 3 = 2 * 2
