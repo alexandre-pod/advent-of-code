@@ -1,22 +1,28 @@
 import Foundation
 
+typealias InputType = [String]
+
 func main() {
-    var lines: [String] = []
+    var input: InputType = []
 
     while let line = readLine() {
-        lines.append(line)
+        input.append(line)
     }
 
-//    print(part1(lines: lines))
-//    print(part2(lines: lines))
+    print(part1(inputParameter: input))
+    print(part2(inputParameter: input))
 }
 
-//func part1(lines: [String]) -> Int {
-//    fatalerror()
-//}
+// MARK: - Part 1
 
-//func part2(lines: [String]) -> Int {
-//    fatalerror()
-//}
+func part1(inputParameter: InputType) -> Int {
+    fatalError()
+}
+
+// MARK: - Part 2
+
+func part2(inputParameter: InputType) -> Int {
+    fatalError()
+}
 
 main()
