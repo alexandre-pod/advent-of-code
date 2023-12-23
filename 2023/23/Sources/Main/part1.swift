@@ -8,47 +8,17 @@
 import Foundation
 
 func part1(hikingMap: HikingMap) -> Int {
-
-    //    print(hikingMap.accessibleCoordinates(from: hikingMap.startCoordinates))
-    //    print(hikingMap[CoordinaaccessibleNeighborstes(x: 3, y: 4)])
-    //    print(hikingMap.accessibleNeighbors(from: Coordinates(x: 3, y: 4)))
-    //    print(hikingMap.accessibleCoordinates(from: Coordinates(x: 3, y: 4)))
-
     let graph = HikingPathGraph.createFrom(hikingMap)
-//    print(graph)
-//    print("start: \(hikingMap.startCoordinates)")
-//    print("end: \(hikingMap.endCoordinates)")
 
     let possiblePaths = findPaths(
         from: hikingMap.startCoordinates,
         to: hikingMap.endCoordinates,
         in: graph
     )
-    //    possiblePaths.enumerated().forEach { (index, path) in
-    //        let length = path.map { graph.distance[$0]! }.reduce(0, +)
-    //        print("#\(index): \(length)")
-    //    }
-
     return possiblePaths
         .map { $0.map { graph.distance[$0]! }.reduce(0, +) }
         .max()!
 }
-
-//func findLongestPathLength(from start: Coordinates, to end: Coordinates, in graph: HikingPathGraph) -> Int? {
-//
-//    var possibleArcPath = graph.distance.keys.filter { $0.end == end }
-//
-//    guard !possibleArcPath.isEmpty else { return nil }
-//
-//    if possibleArcPath.count == 1,
-//        possibleArcPath.first == HikingPathGraph.Arc(start: start, end: end) {
-//        return graph.distance[HikingPathGraph.Arc(start: start, end: end)]!
-//    }
-//
-//    return possibleArcPath
-//        .compactMap { findLongestPathLength(from: start, to: $0.start, in: graph) }
-//        .max()
-//}
 
 func findPaths(from start: Coordinates, to end: Coordinates, in graph: HikingPathGraph) -> [[HikingPathGraph.Arc]] {
 
@@ -199,10 +169,6 @@ extension HikingPathGraph: CustomStringConvertible {
             .sorted { $0.key.start.x + $0.key.start.y < $1.key.start.x + $1.key.start.y }
             .map { "\($0.key): \($0.value)" }
             .joined(separator: "\n")
-
-        //        return [
-        //            "Conn"
-        //        ].joined(separator: "\n")
     }
 }
 
