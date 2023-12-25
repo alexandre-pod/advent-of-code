@@ -245,236 +245,144 @@ extension Vector3D {
 
 // MARK: - Part 2
 
+import Accelerate
+import simd
+
 func part2(hails: Hails) -> Int {
 
 
-    let expectedAnswer = Hail(point: Vector3D(x: 24, y: 13, z: 10), velocity: Vector3D(x: -3, y: 1, z: 2))
-//    for hail in hails {
-//        print("collidingPosition", hail.collidingPosition(with: expectedAnswer))
-//    }
+    /*
+     Equations:
 
-//    var collideInZone = 0
+     X + t * VX = x[1] + t * vx[1]  ==>  t = (x[1] - X) / (VX - vx[1])
+     Y + t * VY = y[1] + t * vy[1]  ==>  t = (y[1] - Y) / (VY - vy[1])
 
-//    var currentHails = hails
-    var currentHails = Array(hails[0..<3])
+     ==> (x[1] - X) * (VY - vy[1]) == (y[1] - Y) * (VX - vx[1])
 
-    var startTime = 0
+     ==> Y * VX - X * VY = Y * vx[1] - X * vy[1] + VX * y[1] - VY * x[1] + x[1] * vy[1] - y[1] * vx[1] (for any points 1 ... N)
 
-    while true && startTime < 1000000 {
-        if startTime % 1000 == 0 {
-            print("startTime", startTime)
-        }
+     -->
 
-            if let stone = findStoneBreaker(from: currentHails[0], to: currentHails[1], hails: currentHails, maxDuration: 100000) {
-                let startPoint = stone.after(time: -startTime).point
-                print("Start point", startPoint)
-                return Int(startPoint.x + startPoint.y + startPoint.z)
-            }
-            if let stone = findStoneBreaker(from: currentHails[1], to: currentHails[0], hails: currentHails, maxDuration: 100000) {
-                let startPoint = stone.after(time: -startTime).point
-                print("Start point", startPoint)
-                return Int(startPoint.x + startPoint.y + startPoint.z)
-            }
+     Y * vx[1] + X * (-vy[1]) + VX * y[1] + VY * (-x[1]) + x[1] * vy[1] - y[1] * vx[1]
+     ==
+     Y * vx[2] + X * (-vy[2]) + VX * y[2] + VY * (-x[2]) + x[2] * vy[2] - y[2] * vx[2]
 
-//        let firstHail = currentHails[0]
-//        let secondHail = currentHails[1]
+     ==>
 
-//        let firstHail = currentHails[1]
-//        let secondHail = currentHails[0]
-//
-//        let candidatesVelocities = firstHail.point.collidingVelocities(with: secondHail, maxDuration: 100000)
-//
-//        for candidate in candidatesVelocities {
-//
-//            if candidate == expectedAnswer.velocity {
-//                print("Expecting velocity to success")
-//
-//            }
-//
-//            let stone = Hail(point: firstHail.point, velocity: candidate)
-//
-//            let allCollides = currentHails.allSatisfy {
-//                $0.collidingPosition(with: stone) != nil
-////                $0.pathCollision(with: stone, ignoringZ: false, ignoringPast: false) != nil
-//            }
-//
-//            if allCollides {
-//                print("startTime", startTime)
-//                print("Possible matching: \(candidate)")
-//                print("Start point", stone.after(time: -startTime).point)
-//
-//                fatalError("valid result ?")
-//            }
-//
-//        }
+     (vx[1] - vx[2]) * Y + (vy[2] - vy[1]) * X + (y[1] - y[2]) * VX + (x[2] - x[1]) * VY + x[1] * vy[1] - x[2] * vy[2] - y[1] * vx[1] + y[2] * vx[2] == 0
 
-        currentHails = currentHails.map { $0.after(time: 1) }
+     This works for any `1` and `2`
 
-        startTime += 1
+     Same way with relation between X and Z we got this equation
 
+     (vx[1] - vx[2]) * Z + (vz[2] - vz[1]) * X + (z[1] - z[2]) * VX + (x[2] - x[1]) * VZ + x[1] * vz[1] - x[2] * vz[2] - z[1] * vx[1] + z[2] * vx[2] == 0
 
+     We have 6 unknowns (X, Y, Z, VX, VY, VZ) and we get 6 equations with this combination of points
+     - 1, 2 -> give 2 equations
+     - 1, 3 -> give 2 equations
+     - 1, 4 -> give 2 equations
 
-    }
+       X Y Z V V V             constant
+             X Y Z                v
+     | . . . . . . |   |  X | = | . |
+     | . . . . . . |   |  Y | = | . |
+     | . . . . . . | . |  Z | = | . |
+     | . . . . . . |   | VX | = | . |
+     | . . . . . . |   | VY | = | . |
+     | . . . . . . |   | VZ | = | . |
 
-//    let aaa = firstHail.point.collidingVelocities(with: secondHail, maxDuration: 1000)
+     Documentation of matrix resolution with Accelerate https://developer.apple.com/documentation/accelerate/working_with_matrices
 
-//    print(aaa)
+     4x4 matrices are the maximum supported, so the solution is obtained in 2 resolutions:
 
+       X Y V V             constant
+           X Y                v
+     | . . . . |   |  X | = | . |  (EQ1[1, 2])
+     | . . . . |   |  Y | = | . |  (EQ1[1, 3])
+     | . . . . | . | VX | = | . |  (EQ1[1, 4])
+     | . . . . |   | VY | = | . |  (EQ1[1, 5])
 
+       X Z V V             constant
+           X Z                v
+     | . . . . |   |  X | = | . |  (EQ2[1, 2])
+     | . . . . |   |  Z | = | . |  (EQ2[1, 3])
+     | . . . . | . | VX | = | . |  (EQ2[1, 4])
+     | . . . . |   | VZ | = | . |  (EQ2[1, 5])
 
-    // input zone
-//    let xZone: ClosedRange<Double> = 200000000000000...400000000000000
-//    let yZone: ClosedRange<Double> = 200000000000000...400000000000000
+     */
 
-    // Sample zone
-    //    let xZone: ClosedRange<Double> = 7...27
-    //    let yZone: ClosedRange<Double> = 7...27
+    let x = hails.map(\.point.x)
+    let y = hails.map(\.point.y)
+    let z = hails.map(\.point.z)
+    let vx = hails.map(\.velocity.x)
+    let vy = hails.map(\.velocity.y)
+    let vz = hails.map(\.velocity.z)
 
-//    for i1 in 0..<(hails.count - 1) {
-//        for i2 in (i1 + 1)..<hails.count {
-//            print("checking \(hails[i1]), \(hails[i2])")
-//            guard let collision = hails[i1].pathCollision(with: hails[i2], ignoringZ: false) else { continue }
-//            print(" - \(collision)")
-//
-////            if xZone.contains(collision.x), yZone.contains(collision.y) {
-////                collideInZone += 1
-////            }
-//
-//            //            print("collision ?", collision)
-//        }
-//    }
+//    (vx[1] - vx[2]) * Y + (vy[2] - vy[1]) * X + (y[1] - y[2]) * VX + (x[2] - x[1]) * VY == x[2] * vy[2] - x[1] * vy[1] + y[1] * vx[1] - y[2] * vx[2]
 
-//    return collideInZone
+    let a1 = simd_double4x4(rows: [
+        simd_double4(vy[1] - vy[0], vx[0] - vx[1], y[0] - y[1], x[1] - x[0]),
+        simd_double4(vy[2] - vy[0], vx[0] - vx[2], y[0] - y[2], x[2] - x[0]),
+        simd_double4(vy[3] - vy[0], vx[0] - vx[3], y[0] - y[3], x[3] - x[0]),
+        simd_double4(vy[4] - vy[0], vx[0] - vx[4], y[0] - y[4], x[4] - x[0]),
+    ])
 
-    fatalError()
+    let b1 = simd_double4(
+        x[1] * vy[1] - x[0] * vy[0] + y[0] * vx[0] - y[1] * vx[1],
+        x[2] * vy[2] - x[0] * vy[0] + y[0] * vx[0] - y[2] * vx[2],
+        x[3] * vy[3] - x[0] * vy[0] + y[0] * vx[0] - y[3] * vx[3],
+        x[4] * vy[4] - x[0] * vy[0] + y[0] * vx[0] - y[4] * vx[4]
+    )
 
-    fatalError()
+    let solutionVector1 = simd_mul(a1.inverse, b1)
+
+//    (vx[1] - vx[2]) * Z + (vz[2] - vz[1]) * X + (z[1] - z[2]) * VX + (x[2] - x[1]) * VZ = x[2] * vz[2] - x[1] * vz[1] + z[1] * vx[1] - z[2] * vx[2]
+
+    let a2 = simd_double4x4(rows: [
+        simd_double4(vz[1] - vz[0], vx[0] - vx[1], z[0] - z[1], x[1] - x[0]),
+        simd_double4(vz[2] - vz[0], vx[0] - vx[2], z[0] - z[2], x[2] - x[0]),
+        simd_double4(vz[3] - vz[0], vx[0] - vx[3], z[0] - z[3], x[3] - x[0]),
+        simd_double4(vz[4] - vz[0], vx[0] - vx[4], z[0] - z[4], x[4] - x[0])
+    ])
+
+    let b2 = simd_double4(
+        x[1] * vz[1] - x[0] * vz[0] + z[0] * vx[0] - z[1] * vx[1],
+        x[2] * vz[2] - x[0] * vz[0] + z[0] * vx[0] - z[2] * vx[2],
+        x[3] * vz[3] - x[0] * vz[0] + z[0] * vx[0] - z[3] * vx[3],
+        x[4] * vz[4] - x[0] * vz[0] + z[0] * vx[0] - z[4] * vx[4]
+    )
+
+    let solutionVector2 = simd_mul(a2.inverse, b2)
+
+    let stone_x = Int(solutionVector1.x.rounded())
+    let stone_y = Int(solutionVector1.y.rounded(.up))
+    let stone_z = Int(solutionVector2.y.rounded())
+    let stone_vx = Int(solutionVector1.z.rounded())
+    let stone_vy = Int(solutionVector1.w.rounded())
+    let stone_vz = Int(solutionVector2.w.rounded())
+
+    // For input.txt -> stone_y needs to be rounded up for some reason
+    // stone_x : 242369545669096 242369545669096.0
+    // stone_y : 339680097675927 339680097675926.44
+    // stone_z : 102145685363875 102145685363875.02
+    // stone_vx : 107 107.0000000000001
+    // stone_vy : -114 -114.00000000000016
+    // stone_vz : 304 304.0000000000007
+
+    print("stone_x :", stone_x, "\(solutionVector1.x)")
+    print("stone_y :", stone_y, "\(solutionVector1.y)")
+    print("stone_z :", stone_z, "\(solutionVector2.y)")
+    print("stone_vx :", stone_vx, "\(solutionVector1.z)")
+    print("stone_vy :", stone_vy, "\(solutionVector1.w)")
+    print("stone_vz :", stone_vz, "\(solutionVector2.w)")
+
+//    print("stone_x 2 :", Int(solutionVector2.x.rounded()))
+//    print("stone_vx 2 :", Int(solutionVector2.z.rounded()))
+
+    return stone_x + stone_y + stone_z
+
+    // 684195328708897 - too low
+    // 684195328708898 - correct value
 }
-
-func findStoneBreaker(from firstHail: Hail, to secondHail: Hail, hails currentHails: Hails, maxDuration: Int) -> Hail? {
-    let candidatesVelocities = firstHail.point.collidingVelocities(with: secondHail, maxDuration: maxDuration)
-
-    for candidate in candidatesVelocities {
-        let stone = Hail(point: firstHail.point, velocity: candidate)
-
-        let allCollides = currentHails.allSatisfy { $0.collidingPosition(with: stone) != nil }
-
-        if allCollides {
-
-            return stone
-
-//            print("startTime", startTime)
-//            print("Possible matching: \(candidate)")
-//            print("Start point", stone.after(time: -startTime).point)
-//
-//            fatalError("valid result ?")
-        }
-
-    }
-    return nil
-}
-
-extension Hail {
-    func after(time: Int) -> Hail {
-        Hail(
-            point: Vector3D(
-                x: point.x + Double(time) * velocity.x,
-                y: point.y + Double(time) * velocity.y,
-                z: point.z + Double(time) * velocity.z
-            ),
-            velocity: velocity
-        )
-    }
-
-    func collidingPosition(with other: Hail) -> Vector3D? {
-
-
-        /*
-         x1 + t * vx1 == x2 + t * vx2
-
-         t = (x2 - x1) / (vx1 - vx2)
-         */
-
-        let x1 = self.point.x
-        let y1 = self.point.y
-        let z1 = self.point.z
-        let vx1 = self.velocity.x
-        let vy1 = self.velocity.y
-        let vz1 = self.velocity.z
-        let x2 = other.point.x
-        let y2 = other.point.y
-        let z2 = other.point.z
-        let vx2 = other.velocity.x
-        let vy2 = other.velocity.y
-        let vz2 = other.velocity.z
-
-        let tX = vx1 != vx2 ? (x2 - x1) / (vx1 - vx2) : nil
-        let tY = vy1 != vy2 ? (y2 - y1) / (vy1 - vy2) : nil
-        let tZ = vz1 != vz2 ? (z2 - z1) / (vz1 - vz2) : nil
-
-//        print("vx1 - vx2", vx1 - vx2)
-//        print("vy1 - vy2", vy1 - vy2)
-//        print("vz1 - vz2", vz1 - vz2)
-//
-//
-//        print("tX", tX)
-//        print("tY", tY)
-//        print("tZ", tZ)
-
-        let nonNilTimes = [tX, tY, tZ].compactMap { $0 }
-//        print(nonNilTimes)
-
-        guard !nonNilTimes.isEmpty, nonNilTimes.allSatisfy({ $0 == nonNilTimes.first }) else {
-            return nil
-        }
-        return self.position(after: nonNilTimes.first!)
-    }
-}
-
-extension Vector3D {
-    func collidingVelocities(with hail: Hail, maxDuration: Int) -> [Vector3D] {
-        (1...maxDuration).compactMap { intTime -> Vector3D? in
-            let time = Double(intTime)
-            let vx = Int(hail.point.x) + intTime * Int(hail.velocity.x) - Int(self.x)
-            let vy = Int(hail.point.y) + intTime * Int(hail.velocity.y) - Int(self.y)
-            let vz = Int(hail.point.z) + intTime * Int(hail.velocity.z) - Int(self.z)
-
-            guard 
-                vx.isMultiple(of: intTime),
-                vy.isMultiple(of: intTime),
-                vz.isMultiple(of: intTime)
-            else { return nil }
-
-            return Vector3D(
-                x: Double(vx / intTime),
-                y: Double(vy / intTime),
-                z: Double(vz / intTime)
-            )
-        }
-    }
-
-//    func collidingVelocitiesNEW(with hail: Hail, maxDuration: Int) -> [Vector3D] {
-//        (1...maxDuration).compactMap { intTime -> Vector3D? in
-//            let time = Double(intTime)
-//            let vx = Int(hail.point.x) + intTime * Int(hail.velocity.x) - Int(self.x)
-//            let vy = Int(hail.point.y) + intTime * Int(hail.velocity.y) - Int(self.y)
-//            let vz = Int(hail.point.z) + intTime * Int(hail.velocity.z) - Int(self.z)
-//
-//            guard
-//                vx.isMultiple(of: intTime),
-//                vy.isMultiple(of: intTime),
-//                vz.isMultiple(of: intTime)
-//            else { return nil }
-//
-//            return Vector3D(
-//                x: Double(vx / intTime),
-//                y: Double(vy / intTime),
-//                z: Double(vz / intTime)
-//            )
-//        }
-//    }
-}
-
-//extension Hail {}
 
 main()
