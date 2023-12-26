@@ -248,6 +248,8 @@ extension Vector3D {
 import Accelerate
 import simd
 
+import LASwift
+
 func part2(hails: Hails) -> Int {
 
 
@@ -379,10 +381,36 @@ func part2(hails: Hails) -> Int {
 //    print("stone_x 2 :", Int(solutionVector2.x.rounded()))
 //    print("stone_vx 2 :", Int(solutionVector2.z.rounded()))
 
-    return stone_x + stone_y + stone_z
-
     // 684195328708897 - too low
     // 684195328708898 - correct value
+
+//    (vx[1] - vx[2]) * Y + (vy[2] - vy[1]) * X + (y[1] - y[2]) * VX + (x[2] - x[1]) * VY == x[2] * vy[2] - x[1] * vy[1] + y[1] * vx[1] - y[2] * vx[2]
+//    (vx[1] - vx[2]) * Z + (vz[2] - vz[1]) * X + (z[1] - z[2]) * VX + (x[2] - x[1]) * VZ == x[2] * vz[2] - x[1] * vz[1] + z[1] * vx[1] - z[2] * vx[2]
+
+    let A = Matrix([
+        [vy[1] - vy[0], vx[0] - vx[1], 0, y[0] - y[1], x[1] - x[0], 0] as Vector,
+        [vz[1] - vz[0], 0, vx[0] - vx[1], z[0] - z[1], 0, x[1] - x[0]] as Vector,
+        [vy[2] - vy[0], vx[0] - vx[2], 0, y[0] - y[2], x[2] - x[0], 0] as Vector,
+        [vz[2] - vz[0], 0, vx[0] - vx[2], z[0] - z[2], 0, x[2] - x[0]] as Vector,
+        [vy[3] - vy[0], vx[0] - vx[3], 0, y[0] - y[3], x[3] - x[0], 0] as Vector,
+        [vz[3] - vz[0], 0, vx[0] - vx[3], z[0] - z[3], 0, x[3] - x[0]] as Vector
+    ])
+
+    let B: Vector = [
+        x[1] * vy[1] - x[0] * vy[0] + y[0] * vx[0] - y[1] * vx[1],
+        x[1] * vz[1] - x[0] * vz[0] + z[0] * vx[0] - z[1] * vx[1],
+        x[2] * vy[2] - x[0] * vy[0] + y[0] * vx[0] - y[2] * vx[2],
+        x[2] * vz[2] - x[0] * vz[0] + z[0] * vx[0] - z[2] * vx[2],
+        x[3] * vy[3] - x[0] * vy[0] + y[0] * vx[0] - y[3] * vx[3],
+        x[3] * vz[3] - x[0] * vz[0] + z[0] * vx[0] - z[3] * vx[3]
+    ]
+
+    let inverseA = inv(A)
+    let result = inverseA * Matrix(B)
+
+    print(result)
+
+    return stone_x + stone_y + stone_z
 }
 
 main()

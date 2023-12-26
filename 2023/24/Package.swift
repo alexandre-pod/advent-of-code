@@ -8,10 +8,20 @@ let package = Package(
     platforms: [
         .macOS("11.0.0")
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/alexandertar/LASwift", from: "0.3.2")
+    ],
     targets: [
         .target(
             name: "Main",
-            dependencies: [])
+            dependencies: [
+                .product(name: "LASwift", package: "LASwift")
+            ]
+//            swiftSettings: [
+//                SwiftSetting.define("ACCELERATE_NEW_LAPACK"),
+//                SwiftSetting.define("ACCELERATE_LAPACK_ILP64")
+//
+//            ]
+        )
     ]
 )
