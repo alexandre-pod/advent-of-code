@@ -93,16 +93,25 @@ func part2(machines: MachineConfigs) -> Int {
 //        .compactMap { minCostForPrice(of: $0, aLimit: Int.max) }
 //        .reduce(0, +)
 
+    // Working attempt using simd matrices inversion (Double)
+    // Matrice used to convert from one base to another
 //    return machines
 //        .map { $0.fixPrizePositionForPart2() }
 //        .compactMap { minCostForPriceUsingSIMD(of: $0) }
 //        .reduce(0, +)
 
+    // Working attempt using manually calculated matrix inversion using only Int
+    // Matrice used to convert from one base to another
+//    return machines
+//        .map { $0.fixPrizePositionForPart2() }
+//        .compactMap { minCostForPriceUsingIntOnly(of: $0) }
+//        .reduce(0, +)
+
+    // Directly solves the solution equation instead of doing vector base conversion
     return machines
         .map { $0.fixPrizePositionForPart2() }
-        .compactMap { minCostForPriceUsingIntOnly(of: $0) }
+        .compactMap { minCostForPriceUsingSimpleMathEquation(of: $0) }
         .reduce(0, +)
-
 }
 
 private func minCostForPriceUsingSIMD(of machine: MachineConfig) -> Int? {
@@ -155,6 +164,23 @@ private func minCostForPriceUsingIntOnly(of machine: MachineConfig) -> Int? {
     let bCount = y / divider
 
     return aCount * aCost + bCount * bCost
+}
+
+private func minCostForPriceUsingSimpleMathEquation(of machine: MachineConfig) -> Int? {
+    let a = machine.buttonAMove
+    let b = machine.buttonBMove
+    let p = machine.prizePosition
+    // Solution to:
+    // aCount * a.x + bCount * b.x = p.x
+    // aCount * a.y + bCount * b.y = p.y
+    let aCount = (p.x * b.y - p.y * b.x) / (a.x * b.y - a.y * b.x)
+    let bCount = (p.x * a.y - p.y * a.x) / (b.x * a.y - b.y * a.x)
+
+    if (a * aCount + b * bCount) == p {
+        return aCount * aCost + bCount * bCost
+    }
+
+    return nil
 }
 
 extension Coordinate2D {
