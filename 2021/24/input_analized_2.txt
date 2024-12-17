@@ -1,0 +1,83 @@
+alexandre@MPB-M1-de-Alexandre:~/lab/advent-of-code-2020/2021/24 (master) $ swift run Main -c release < input.txt
+[0/0] Build complete!
+
+z = (N_1 + 9) * 26 + N_2 + 4
+
+x = z % 26
+z = z * 26 + N_3 + 2
+
+x = z % 26
+z = z / 26
+x = x - 9
+x = x != N_4
+y = (25 * x) + 1
+z = z * y
+y = (N_4 + 5) * x
+z = z + y
+
+x = z % 26
+z = z / 26
+x = x - 9
+x = x != N_5
+y = (25 * x) + 1
+z = z * y
+y = (N_5 + 1) * x
+z = z + y
+
+x = z % 26
+z = z * 26 + N_6 + 6
+
+x = z % 26
+z = z * 26 + N_7 + 11
+
+x = z % 26
+z = z / 26
+x = x - 10
+x = x != N_8
+y = (25 * x) + 1
+z = z * y
+y = (N_8 + 15) * x
+z = z + y
+
+x = z % 26
+z = z * 26 + N_9 + 7
+
+x = z % 26
+z = z / 26
+x = x - 2
+x = x != N_10
+y = (25 * x) + 1
+z = z * y
+y = (N_10 + 12) * x
+z = z + y
+
+x = z % 26
+z = z * 26 + N_11 + 15
+
+x = z % 26
+z = z / 26
+x = x - 15
+x = x != N_12
+y = (25 * x) + 1
+z = z * y
+y = (N_12 + 9) * x
+z = z + y
+
+x = z % 26
+z = z / 26
+x = x - 9
+x = x != N_13
+y = (25 * x) + 1
+z = z * y
+y = (N_13 + 12) * x
+z = z + y
+
+x = z % 26
+z = z / 26
+x = x - 3
+x = x != N_14
+y = (25 * x) + 1
+z = z * y
+y = (N_14 + 12) * x
+z = z + y
+

@@ -1,0 +1,153 @@
+alexandre@MPB-M1-de-Alexandre:~/lab/advent-of-code-2020/2021/24 (master) $ swift run Main -c release < input.txt
+[0/0] Build complete!
+
+x = 1
+y = N_1 + 9
+z = N_1 + 9
+
+x = z % 26
+x = x + 12
+x = x == w
+x = x == 0
+y = 25 * x + 1
+z = z * y
+y = (N_2 + 4) * x
+z = z + y
+
+x = z % 26
+x = x + 12
+x = x == w
+x = x == 0
+y = (25 * x) + 1
+z = z * y
+y = (N_3 + 2) * x
+z = z + y
+
+x = z % 26
+z = z / 26
+x = x - 9
+x = x == w
+x = x == 0
+y = (25 * x) + 1
+z = z * y
+y = (N_4 + 5) * x
+z = z + y
+
+x = z % 26
+z = z / 26
+x = x - 9
+x = x == w
+x = x == 0
+y = (25 * x) + 1
+z = z * y
+y = (N_5 + 1) * x
+z = z + y
+
+x = z % 26
+x = x + 14
+x = x == w
+x = x == 0
+y = (25 * x) + 1
+z = z * y
+y = (N_6 + 6) * x
+z = z + y
+
+x = z % 26
+x = x + 14
+x = x == w
+x = x == 0
+y = (25 * x) + 1
+z = z * y
+y = (N_7 + 11) * x
+z = z + y
+
+x = z % 26
+z = z / 26
+x = x - 10
+x = x == w
+x = x == 0
+y = (25 * x) + 1
+z = z * y
+y = (N_8 + 15) * x
+z = z + y
+
+x = z % 26
+x = x + 15
+x = x == w
+x = x == 0
+y = (25 * x) + 1
+z = z * y
+y = (N_9 + 7) * x
+z = z + y
+
+x = z % 26
+z = z / 26
+x = x - 2
+x = x == w
+x = x == 0
+y = (25 * x) + 1
+z = z * y
+y = (N_10 + 12) * x
+z = z + y
+
+x = z % 26
+x = x + 11
+x = x == w
+x = x == 0
+y = (25 * x) + 1
+z = z * y
+y = (N_11 + 15) * x
+z = z + y
+
+x = z % 26
+z = z / 26
+x = x + -15
+x = x == w
+x = x == 0
+y = (25 * x) + 1
+z = z * y
+y = (N_12 + 9) * x
+z = z + y
+
+x = z % 26
+z = z / 26
+x = x - 9
+x = x == w
+x = x == 0
+y = (25 * x) + 1
+z = z * y
+y = (N_13 + 12) * x
+z = z + y
+
+x = z % 26
+z = z / 26
+x = x - 3
+x = x == w
+x = x == 0
+y = (25 * x) + 1
+z = z * y
+y = (N_14 + 12) * x
+z = z + y
+
+
+func addBlock(z: Int, input: Int, divideFactor: Int, param1: Int, param2: Int) {
+	let on = ((z % 26) - param1) == input ? 0 : 1
+	let factor = on == 1 ? 26 : 0
+	return (z / divideFactor) * factor + (input + param2) * on
+}
+
+var z = 0
+z = addBlock(z: z, input: N1, divideFactor: 1, param1: 12, param2: 9)
+z = addBlock(z: z, input: N2, divideFactor: 1, param1: 12, param2: 4)
+z = addBlock(z: z, input: N3, divideFactor: 1, param1: 12, param2: 2)
+z = addBlock(z: z, input: N4, divideFactor: 26, param1: -9, param2: 5)
+z = addBlock(z: z, input: N5, divideFactor: 26, param1: -9, param2: 1)
+z = addBlock(z: z, input: N6, divideFactor: 1, param1: 14, param2: 6)
+z = addBlock(z: z, input: N7, divideFactor: 1, param1: 14, param2: 11)
+z = addBlock(z: z, input: N8, divideFactor: 26, param1: -10, param2: 15)
+z = addBlock(z: z, input: N9, divideFactor: 1, param1: 15, param2: 7)
+z = addBlock(z: z, input: N10, divideFactor: 26, param1: -2, param2: 12)
+z = addBlock(z: z, input: N11, divideFactor: 1, param1: 11, param2: 15)
+z = addBlock(z: z, input: N12, divideFactor: 26, param1: -15, param2: 9)
+z = addBlock(z: z, input: N13, divideFactor: 26, param1: -9, param2: 12)
+z = addBlock(z: z, input: N14, divideFactor: 26, param1: -3, param2: 12)
