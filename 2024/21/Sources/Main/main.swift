@@ -195,7 +195,7 @@ func movementsForInstructions(from start: Character, to end: Character) -> [Char
     var movements: [Character] = []
     var currentPosition = startPosition
 
-    if currentPosition.y == 0, endPosition.y != 0 {
+    if currentPosition.y == 0, endPosition.y != 0, endPosition.x == 0 {
         currentPosition.y += 1
         movements.append("v")
     }
@@ -261,6 +261,12 @@ func instructionPosition(for code: Character) -> SIMD2<Int> {
 
 func part2(codes: InputType) -> Int {
 
+//    let aaaa = allInstructionsCombinationsToCreate(code: "029A")
+//    print(aaaa)
+//    print(aaaa.listKeyValidInputs.map { String($0) })
+//
+//    fatalError()
+
     var result = 0
 
     for code in codes {
@@ -269,32 +275,38 @@ func part2(codes: InputType) -> Int {
 
         var cache: [CacheKey: Int] = [:]
 
-        let directInput = directionKeyboardKeysCountToEnterKeys(keys, for: 1, lastRobot: 1, cache: &cache)
+        let directInput = directionKeyboardKeysCountToEnterKeys(keys, intermediateRobots: 0, isDoorCode: true, cache: &cache)
         cache = [:]
 //        print(directInput)
-        let inputForRobot1 = directionKeyboardKeysCountToEnterKeys(keys, for: 1, lastRobot: 2, cache: &cache)
+        let inputForRobot1 = directionKeyboardKeysCountToEnterKeys(keys, intermediateRobots: 1, isDoorCode: true, cache: &cache)
         cache = [:]
 //        print(inputForRobot1)
-        let inputForRobot2 = directionKeyboardKeysCountToEnterKeys(keys, for: 1, lastRobot: 3, cache: &cache)
+        let inputForRobot2 = directionKeyboardKeysCountToEnterKeys(keys, intermediateRobots: 2, isDoorCode: true, cache: &cache)
         cache = [:]
 //        print(inputForRobot2)
 
         // Gives the rame response than part 1
-        // 4 = 1 (door) + 2 (robot) + 1 (human)
-        let inputForHuman = directionKeyboardKeysCountToEnterKeys(keys, for: 1, lastRobot: 4, cache: &cache)
-        print(inputForHuman)
-
-        // 27 = 1 (door) + 25 (robot) + 1 (human)
-//        let inputForHuman = directionKeyboardKeysCountToEnterKeys(keys, for: 1, lastRobot: 27, cache: &cache)
+        // 3 = 2 (robot) + 1 (human)
+//        let inputForHuman = directionKeyboardKeysCountToEnterKeys(keys, intermediateRobots: 3, isDoorCode: true, cache: &cache)
 //        print(inputForHuman)
+
+        // 26 = + 25 (robot) + 1 (human)
+        let inputForHuman = directionKeyboardKeysCountToEnterKeys(keys, intermediateRobots: 26, isDoorCode: true, cache: &cache)
+        print(inputForHuman)
 
         result += inputForHuman * Int(String(code.dropLast()))!
     }
 
     return result
 
+    // Sample answers
+    // '029A': 82050061710 * 29
+    // '980A': 72242026390 * 980
+    // '179A': 81251039228 * 179
+    // '456A': 80786362258 * 456
+    // '379A': 77985628636 * 379
+    // result: 154115708116294
 
-    // 304661348613172 too high
 
     fatalError()
 //        return codes.map { code in
@@ -321,42 +333,58 @@ func part2(codes: InputType) -> Int {
 
 struct CacheKey: Hashable {
     let keys: [Character]
-    let robotNumber: Int
-    let lastRobot: Int
+    let isDoorCode: Bool
+    let intermediateRobots: Int
 }
 
 func directionKeyboardKeysCountToEnterKeys(
     _ keys: [Character],
-    for robotNumber: Int,
-    lastRobot: Int,
+    intermediateRobots: Int,
+    isDoorCode: Bool,
     cache: inout [CacheKey: Int]
 ) -> Int {
-    if robotNumber == lastRobot {
+    if intermediateRobots == 0 {
         // we are directly tapping the keys, so the answer if the number of keys
         return keys.count
     }
 
-    let key = CacheKey(keys: keys, robotNumber: robotNumber, lastRobot: lastRobot)
+    let key = CacheKey(
+        keys: keys,
+        isDoorCode: isDoorCode,
+        intermediateRobots: intermediateRobots
+    )
     if let value = cache[key] {
         return value
     }
 
-    if robotNumber == 1 {
+    if isDoorCode {
         var finalKeysCount = 0
         var robotPosition: Character = "A"
         for key in keys {
-            let movementsAndInput = movementsForCode(from: robotPosition, to: key) + ["A"]
+//            let movementsAndInput = movementsForCode(from: robotPosition, to: key) + ["A"]
+            let possibleMoves = allMovementsForCode(from: robotPosition, to: key).map { $0 + ["A"] }
             robotPosition = key
 
             // `movementsAndInput` represent the action robot2 should enter to have robot1 enter `letter`
             // at the start and end of `movementsAndInput` all robots are on A (because start or all of them pressing A)
 
-            finalKeysCount += directionKeyboardKeysCountToEnterKeys(
-                movementsAndInput,
-                for: robotNumber + 1,
-                lastRobot: lastRobot,
-                cache: &cache
-            )
+            finalKeysCount += possibleMoves
+                .map { move in
+                    directionKeyboardKeysCountToEnterKeys(
+                        move,
+                        intermediateRobots: intermediateRobots - 1,
+                        isDoorCode: false,
+                        cache: &cache
+                    )
+                }
+                .min()!
+
+//            finalKeysCount += directionKeyboardKeysCountToEnterKeys(
+//                movementsAndInput,
+//                intermediateRobots: intermediateRobots - 1,
+//                isDoorCode: false,
+//                cache: &cache
+//            )
         }
 
         cache[key] = finalKeysCount
@@ -365,18 +393,30 @@ func directionKeyboardKeysCountToEnterKeys(
         var finalKeysCount = 0
         var robotPosition: Character = "A"
         for key in keys {
-            let movementsAndInput = movementsForInstructions(from: robotPosition, to: key) + ["A"]
+//            let movementsAndInput = movementsForInstructions(from: robotPosition, to: key) + ["A"]
+            let possibleMoves = allMovementsForInstructions(from: robotPosition, to: key).map { $0 + ["A"] }
             robotPosition = key
 
             // `movementsAndInput` represent the action robot2 should enter to have robot1 enter `letter`
             // at the start and end of `movementsAndInput` all robots are on A (because start or all of them pressing A)
 
-            finalKeysCount += directionKeyboardKeysCountToEnterKeys(
-                movementsAndInput,
-                for: robotNumber + 1,
-                lastRobot: lastRobot,
-                cache: &cache
-            )
+            finalKeysCount += possibleMoves
+                .map { move in
+                    directionKeyboardKeysCountToEnterKeys(
+                        move,
+                        intermediateRobots: intermediateRobots - 1,
+                        isDoorCode: false,
+                        cache: &cache
+                    )
+                }
+                .min()!
+
+//            finalKeysCount += directionKeyboardKeysCountToEnterKeys(
+//                movementsAndInput,
+//                intermediateRobots: intermediateRobots - 1,
+//                isDoorCode: false,
+//                cache: &cache
+//            )
         }
 
         cache[key] = finalKeysCount
@@ -386,86 +426,6 @@ func directionKeyboardKeysCountToEnterKeys(
     fatalError()
 }
 
-func instructionsToTap(
-    keys: [Character],
-    afterRobots depth: Int // 0 = numerical keypad, >0 = directional keypad
-) -> [Character] {
-//    guard depth > 0 else {
-//        return keys
-//    }
-
-    if depth == 1 {
-        var directionalInstructions = instructionsToCreate(code: keys)
-        return directionalInstructions
-    }
-
-
-    let directionalKeys = instructionsToTap(
-        keys: keys,
-        afterRobots: depth - 1
-    )
-
-
-    fatalError()
-}
-
-//    func instructions(
-//        toWrite instruction: Character,
-//    //    from position: inout Character,
-//        afterIntermediateRobotsCount intermediateRobots: Int
-//    ) -> [Character] {
-//
-//        if intermediateRobots == 0 { // human can press directly
-//            return [instruction]
-//        }
-//        // we need to move the robot, then press A
-//    //    let intermediateInstructions = movementsForInstructions(from: "A", to: instruction) + ["A"]
-//    //
-//    //    var currentPosition = "A"
-//    //    for intermediateInstruction in intermediateInstructions {
-//    //
-//    //        minInstructions(toWrite: <#T##Character#>, afterIntermediateRobotsCount: <#T##Int#>)
-//    //
-//    //    }
-//
-//
-//    //    let aaaa = minInstructions(toWrite: <#T##Character#>, from: <#T##Character#>, afterIntermediateRobotsCount: <#T##Int#>)
-//
-//    }
-
-func minInstructionsCountToCreate(instruction: Character, afterIntermediateRobotsCount intermediateRobots: Int) -> Int {
-
-    if intermediateRobots == 0 {
-        var movements = movementsForInstructions(from: "A", to: instruction) + ""
-        return movements.count + 1
-    }
-
-
-
-
-
-    fatalError()
-
-//    var movementsCount = 0
-//    var currentPosition: Character = "A"
-//    for character in instructions {
-//        movementsCount += movementsForInstructions(from: currentPosition, to: character).count
-//        currentPosition = character
-//        movementsCount.append("A")
-//    }
-//    return movements
-}
-
-//func minInstructionsCountToCreate(instructions: String) -> Int {
-//    var movementsCount = 0
-//    var currentPosition: Character = "A"
-//    for character in instructions {
-//        movementsCount += movementsForInstructions(from: currentPosition, to: character).count
-//        currentPosition = character
-//        movementsCount.append("A")
-//    }
-//    return movements
-//}
 
 main()
 
@@ -473,3 +433,148 @@ main()
 //    <v<A>>^AA<vA<A>>^AAvAA<^A>A<vA>^A<A>A<vA>^A<A>A<v<A>A>^AAvA<^A>A
 //    mine:
 //    v<<A>>^Av<A<A>>^AAvA<^A>AvA^Av<A>^A<A>Av<A>^A<A>Av<A<A>>^AAvA<^A>A
+
+// MARK: - Exhaustive instructions
+
+typealias Instructions = [Character]
+typealias InstructionsAlternatives = [[Character]]
+typealias InstructionsCombinations = [InstructionsAlternatives]
+
+func allInstructionsCombinationsToCreate(code: String) -> InstructionsCombinations {
+    var movementPossibilities: InstructionsCombinations = []
+    var currentPosition: Character = "A"
+    for character in code {
+        movementPossibilities.append(allMovementsForCode(from: currentPosition, to: character))
+        currentPosition = character
+        movementPossibilities.append([["A"]])
+    }
+    return movementPossibilities
+}
+
+extension InstructionsCombinations {
+    var listKeyValidInputs: [[Character]] {
+        var validKeys: [[Character]] = []
+
+        for alternative in self {
+            if validKeys.isEmpty {
+                validKeys = alternative
+            } else {
+                let beforeValidKeys = validKeys
+                validKeys = alternative.flatMap { addition in
+                    beforeValidKeys.map { $0 + addition }
+                }
+            }
+        }
+
+        return validKeys
+    }
+//    func regroup() -> InstructionsCombinations {
+//        var possibilities: [InstructionsAlternatives] = []
+//
+//        var currentSimple: [Character] = []
+//        for alternatives in self {
+//            if alternatives.count == 1 {
+//                currentSimple.append(contentsOf: alternatives[0])
+//            } else {
+//                if !currentSimple.isEmpty {
+//                    possibilities.append([currentSimple])
+//                    currentSimple = []
+//                }
+//                possibilities.append(alternatives)
+//            }
+//        }
+//        if !currentSimple.isEmpty {
+//            possibilities.append([currentSimple])
+//            currentSimple = []
+//        }
+//
+//        return possibilities
+//    }
+}
+
+func allInstructionsCombinationsToCreate(instructions: Instructions) -> InstructionsCombinations {
+    var movementPossibilities: InstructionsCombinations = []
+    var currentPosition: Character = "A"
+    for character in instructions {
+        movementPossibilities.append(allMovementsForInstructions(from: currentPosition, to: character))
+        currentPosition = character
+        movementPossibilities.append([["A"]])
+    }
+    return movementPossibilities
+}
+
+
+func allMovementsForCode(from start: Character, to end: Character) -> [[Character]] {
+    let startPosition = codePosition(for: start)
+    let endPosition = codePosition(for: end)
+    var validMovements: [[Character]] = []
+
+    let horizontalMovements: [Character] = startPosition.x < endPosition.x
+    ? Array(repeating: ">", count: endPosition.x - startPosition.x)
+    : Array(repeating: "<", count: startPosition.x - endPosition.x)
+    let verticalMovements: [Character] = startPosition.y < endPosition.y
+    ? Array(repeating: "v", count: endPosition.y - startPosition.y)
+    : Array(repeating: "^", count: startPosition.y - endPosition.y)
+
+    validMovements = allCombinationMixing(horizontalMovements, verticalMovements)
+        .filter { moves in
+            var currentPosition = startPosition
+            for move in moves {
+                switch move {
+                case "A": break
+                case "<": currentPosition.x -= 1
+                case ">": currentPosition.x += 1
+                case "^": currentPosition.y -= 1
+                case "v": currentPosition.y += 1
+                default: fatalError()
+                }
+                if currentPosition.x == 0, currentPosition.y == 3 {
+                    return false
+                }
+            }
+            return true
+        }
+    return validMovements
+}
+
+func allMovementsForInstructions(from start: Character, to end: Character) -> [[Character]] {
+    let startPosition = instructionPosition(for: start)
+    let endPosition = instructionPosition(for: end)
+    var validMovements: [[Character]] = []
+
+    let horizontalMovements: [Character] = startPosition.x < endPosition.x
+    ? Array(repeating: ">", count: endPosition.x - startPosition.x)
+    : Array(repeating: "<", count: startPosition.x - endPosition.x)
+    let verticalMovements: [Character] = startPosition.y < endPosition.y
+    ? Array(repeating: "v", count: endPosition.y - startPosition.y)
+    : Array(repeating: "^", count: startPosition.y - endPosition.y)
+
+    validMovements = allCombinationMixing(horizontalMovements, verticalMovements)
+        .filter { moves in
+            var currentPosition = startPosition
+            for move in moves {
+                switch move {
+                case "A": break
+                case "<": currentPosition.x -= 1
+                case ">": currentPosition.x += 1
+                case "^": currentPosition.y -= 1
+                case "v": currentPosition.y += 1
+                default: fatalError()
+                }
+                if currentPosition.x == 0, currentPosition.y == 0 {
+                    return false
+                }
+            }
+            return true
+        }
+    return validMovements
+}
+
+func allCombinationMixing(_ part1: [Character], _ part2: [Character]) -> [[Character]] {
+    guard !part1.isEmpty else { return [part2] }
+    guard !part2.isEmpty else { return [part1] }
+    return [
+        allCombinationMixing(Array(part1.dropFirst()), part2).map { [part1[0]] + $0 },
+        allCombinationMixing(part1, Array(part2.dropFirst())).map { [part2[0]] + $0 }
+    ].flatMap { $0 }
+}
