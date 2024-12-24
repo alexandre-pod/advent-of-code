@@ -1,0 +1,8 @@
+swift run Main < input.txt
+swift build && ./.build/debug/Main < input.txt
+
+swift run -c release Main < input.txt
+swift build -c release && ./.build/release/Main < input.txt
+
+
+dot -Tsvg input.dot > output.svg
